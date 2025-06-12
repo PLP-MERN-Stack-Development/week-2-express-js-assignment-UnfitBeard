@@ -45,12 +45,46 @@ app.get('/', (req, res) => {
   res.send('Welcome to the Product API! Go to /api/products to see all products.');
 });
 
-// TODO: Implement the following routes:
-// GET /api/products - Get all products
 // GET /api/products/:id - Get a specific product
+app.get('/api/products/:id', (req, res) => {
+  const product = products.find(p => p.id === req.params.id);
+  if (!product) return res.status(404).json({ message: 'Product not found' });
+  res.json(product);
+});
+
 // POST /api/products - Create a new product
+app.post('/api/products', (req, res) => {
+  const { name, description, price, category, inStock } = req.body;
+  const newProduct = {
+    id: uuidv4(),
+    name,
+    description,
+    price,
+    category,
+    inStock
+  };
+  products.push(newProduct);
+  res.status(201).json(newProduct);
+});
+
 // PUT /api/products/:id - Update a product
+app.put('/api/products/:id', (req, res) => {
+  const index = products.findIndex(p => p.id === req.params.id);
+  if (index === -1) return res.status(404).json({ message: 'Product not found' });
+
+  products[index] = { ...products[index], ...req.body };
+  res.json(products[index]);
+});
+
 // DELETE /api/products/:id - Delete a product
+app.delete('/api/products/:id', (req, res) => {
+  const index = products.findIndex(p => p.id === req.params.id);
+  if (index === -1) return res.status(404).json({ message: 'Product not found' });
+
+  const deleted = products.splice(index, 1);
+  res.json({ message: 'Product deleted', product: deleted[0] });
+});
+
 
 // Example route implementation for GET /api/products
 app.get('/api/products', (req, res) => {
@@ -59,8 +93,26 @@ app.get('/api/products', (req, res) => {
 
 // TODO: Implement custom middleware for:
 // - Request logging
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url} at ${new Date().toISOString()}`);
+  next();
+});
+
 // - Authentication
+app.use((req, res, next) => {
+  const authToken = req.headers['authorization'];
+  if (!authToken || authToken !== 'Bearer secrettoken') {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  next();
+});
+
 // - Error handling
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Internal Server Error' });
+});
+
 
 // Start the server
 app.listen(PORT, () => {
